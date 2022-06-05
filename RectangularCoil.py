@@ -18,6 +18,8 @@ defaultPrimitiveParams = [
     "0.0",
     "5.0",
     "2",
+    "12.0",
+    "6.0",
     "2.0",
     "1.0" 
 ]
@@ -150,22 +152,32 @@ class UDPExtension(IUDPExtension):
             error.Add("Number of turns cannot be less than 1.")
             return False
         dist   = udpParams[2].Data
-        width  = udpParams[4].Data
-        height = udpParams[5].Data
+        coil_width  = udpParams[4].Data
+        coil_height = udpParams[5].Data
+        wire_width  = udpParams[6].Data
+        wire_height = udpParams[7].Data
         
         if (dist <= 0):
             error.Add("Distance should be more than 0.")
             return False
 
-        if (width <= 0):
-            error.Add("Width should be more than 0.")
+        if (coil_width <= 0):
+            error.Add("Coil width should be more than 0.")
             return False
 
-        if (height <= 0):
-            error.Add("Height should be more than 0.")
+        if (coil_height <= 0):
+            error.Add("Coil height should be more than 0.")
             return False
 
-        if (dist <= width):
+        if (wire_width <= 0):
+            error.Add("Wire width should be more than 0.")
+            return False
+
+        if (wire_height <= 0):
+            error.Add("Wire height should be more than 0.")
+            return False
+
+        if (dist <= wire_width):
             error.Add("Distance between turns should be more than the width.")
             return False
         return True
@@ -182,7 +194,7 @@ class UDPExtension(IUDPExtension):
         coil_width = paramValues[4].Data
         coil_height = paramValues[5].Data
 
-        num_points = 2 + 4 * num_points
+        num_points = 2 + 4 * num_turns
         num_segments = num_points - 1
 
         start_x = centre_x + 0.5 * coil_width
@@ -225,42 +237,38 @@ class UDPExtension(IUDPExtension):
         self._m_StartPt = points[0]
         self._m_EndPt = points[num_points - 1]
 
-        theSegArray = []
-        for indexSeg in xrange(0, numSegments):
-            theSegDefinition = UDPPolylineSegmentDefinition(PolylineSegmentType.LineSegment,
-                                                            indexSeg,
-                                                            0, 0.0, UDPPosition(0,0,0), CoordinateSystemPlane.XYPlane)
-            theSegArray.append(theSegDefinition)
+        segments = []
+        for i in xrange(0, num_segments):
+            segment = UDPPolylineSegmentDefinition(PolylineSegmentType.LineSegment, i, 0, 0.0, UDPPosition(0,0,0), CoordinateSystemPlane.XYPlane)
+            segments.append(segment)
 
-        thePolylineDefinition = UDPPolylineDefinition(thePointArray, theSegArray, 0, 0)
-        return funcLib.CreatePolyline(thePolylineDefinition)
+        polyline = UDPPolylineDefinition(points, segments, 0, 0)
+        return funcLib.CreatePolyline(polyline)
 
     def _CreateProfile(self, funcLib, paramValues):
-        xStart = paramValues[0].Data
-        yStart = paramValues[1].Data
+        start_x = paramValues[0].Data
+        start_y = paramValues[1].Data
         
         wire_width =  paramValues[6].Data
         wire_height = paramValues[7].Data
 
-        numPoints = 5
-        numSegments = numPoints - 1
+        num_points = 5
+        num_segments = num_points - 1
         
-        thePointArray = []
-        thePointArray.append(UDPPosition(xStart, yStart - (wire_width/2.0), -wire_height/2.0))
-        thePointArray.append(UDPPosition(xStart, yStart + (wire_width/2.0), -wire_height/2.0))
-        thePointArray.append(UDPPosition(xStart, yStart + (wire_width/2.0), wire_height/2.0))
-        thePointArray.append(UDPPosition(xStart, yStart - (wire_width/2.0), wire_height/2.0))
-        thePointArray.append(UDPPosition(xStart, yStart - (wire_width/2.0), -wire_height/2.0))
+        points = []
+        points.append(UDPPosition(start_x, start_y - (wire_width/2.0), -wire_height/2.0))
+        points.append(UDPPosition(start_x, start_y + (wire_width/2.0), -wire_height/2.0))
+        points.append(UDPPosition(start_x, start_y + (wire_width/2.0), wire_height/2.0))
+        points.append(UDPPosition(start_x, start_y - (wire_width/2.0), wire_height/2.0))
+        points.append(UDPPosition(start_x, start_y - (wire_width/2.0), -wire_height/2.0))
 
-        theSegArray = []
-        for indexSeg in xrange(0, numSegments):
-            theSegDefinition = UDPPolylineSegmentDefinition(PolylineSegmentType.LineSegment,
-                                                            indexSeg,
-                                                            0, 0.0, UDPPosition(0,0,0), CoordinateSystemPlane.XYPlane)
-            theSegArray.append(theSegDefinition)
+        segments = []
+        for i in xrange(0, num_segments):
+            segment = UDPPolylineSegmentDefinition(PolylineSegmentType.LineSegment, i, 0, 0.0, UDPPosition(0,0,0), CoordinateSystemPlane.XYPlane)
+            segments.append(segment)
 
-        thePolylineDefinition = UDPPolylineDefinition(thePointArray, theSegArray, 1, 1)
-        return funcLib.CreatePolyline(thePolylineDefinition)
+        polyline = UDPPolylineDefinition(points, segments, 1, 1)
+        return funcLib.CreatePolyline(polyline)
 
     def _NameEntities(self, funcLib, paramValues):
         # Name faces
