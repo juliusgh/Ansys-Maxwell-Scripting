@@ -119,12 +119,12 @@ class UDPExtension(IUDPExtension):
         profile = self._CreateProfile(funcLib, paramValues)
         if (profile < 0):
             funcLib.AddMessage(MessageSeverity.ErrorMessage, "Could not create profile")
-
+        
         theUDPSweepOptions = UDPSweepOptions(SweepDraftType.RoundDraft, 0.0, 0.0)
         bRet = funcLib.SweepAlongPath(profile, path, theUDPSweepOptions)
         if (bRet == False):
             funcLib.AddMessage(MessageSeverity.ErrorMessage, "Could not sweep profile along path")   
-        self._NameEntities(funcLib, paramValues)
+        #self._NameEntities(funcLib, paramValues)
         return bRet
 
 
@@ -205,7 +205,7 @@ class UDPExtension(IUDPExtension):
         points_y = []
         points_z = []
         points = []
-        for i in xrange(0, num_points):
+        for i in range(0, num_points):
             points_x.append(start_x)
             points_y.append(start_y)
             points_z.append(start_y)
@@ -222,8 +222,6 @@ class UDPExtension(IUDPExtension):
             old_i = 4 * (turn - 1) + 1
             new_i = 4 * turn + 1
 
-            print('old_i:', old_i, 'new_i:', new_i)
-
             points_x[new_i] = points_x[old_i] + dist
             points_y[new_i] = points_y[old_i] + dist
             points_x[new_i + 1] = points_x[old_i + 1] - dist
@@ -233,17 +231,17 @@ class UDPExtension(IUDPExtension):
             points_x[new_i + 3] = points_x[old_i + 3] + dist
             points_y[new_i + 3] = points_y[old_i + 3] - dist
 
-        points_x[num_points - 1] = points_x[num_points - 4]
+        points_x[num_points - 1] = points_x[num_points - 2]
         points_y[num_points - 1] = start_y
 
-        for i in xrange(0, num_points):
+        for i in range(0, num_points):
             points.append(UDPPosition(points_x[i], points_y[i], points_z[i]))
 
         self._m_StartPt = points[0]
         self._m_EndPt = points[num_points - 1]
 
         segments = []
-        for i in xrange(0, num_segments):
+        for i in range(0, num_segments):
             segment = UDPPolylineSegmentDefinition(PolylineSegmentType.LineSegment, i, 0, 0.0, UDPPosition(0,0,0), CoordinateSystemPlane.XYPlane)
             segments.append(segment)
 
@@ -251,24 +249,33 @@ class UDPExtension(IUDPExtension):
         return funcLib.CreatePolyline(polyline)
 
     def _CreateProfile(self, funcLib, paramValues):
-        start_x = paramValues[0].Data
-        start_y = paramValues[1].Data
+        centre_x = paramValues[0].Data
+        centre_y = paramValues[1].Data
+
+        dist = paramValues[2].Data
+        num_turns = paramValues[3].Data
+        coil_width = paramValues[4].Data
+        coil_height = paramValues[5].Data
         
         wire_width =  paramValues[6].Data
         wire_height = paramValues[7].Data
 
         num_points = 5
         num_segments = num_points - 1
+
+        start_x = centre_x + 0.5 * coil_width
+        start_y = centre_y
+        start_z = 0
         
         points = []
-        points.append(UDPPosition(start_x, start_y - (wire_width/2.0), -wire_height/2.0))
-        points.append(UDPPosition(start_x, start_y + (wire_width/2.0), -wire_height/2.0))
-        points.append(UDPPosition(start_x, start_y + (wire_width/2.0), wire_height/2.0))
-        points.append(UDPPosition(start_x, start_y - (wire_width/2.0), wire_height/2.0))
-        points.append(UDPPosition(start_x, start_y - (wire_width/2.0), -wire_height/2.0))
+        points.append(UDPPosition(start_x - wire_width/2.0, start_y, -wire_height/2.0))
+        points.append(UDPPosition(start_x + wire_width/2.0, start_y, -wire_height/2.0))
+        points.append(UDPPosition(start_x + wire_width/2.0, start_y, wire_height/2.0))
+        points.append(UDPPosition(start_x - wire_width/2.0, start_y, wire_height/2.0))
+        points.append(UDPPosition(start_x - wire_width/2.0, start_y, -wire_height/2.0))
 
         segments = []
-        for i in xrange(0, num_segments):
+        for i in range(0, num_segments):
             segment = UDPPolylineSegmentDefinition(PolylineSegmentType.LineSegment, i, 0, 0.0, UDPPosition(0,0,0), CoordinateSystemPlane.XYPlane)
             segments.append(segment)
 
@@ -324,6 +331,6 @@ class UDPExtension(IUDPExtension):
         # Outer face vertex - (common to Right & Bottom edge)
         posOnVertex.append(UDPPosition(self._m_EndPt.X, self._m_EndPt.Y + wire_width/2.0, self._m_EndPt.Z - wire_height/2.0))
         
-        for i in xrange(0, 8):
+        for i in range(0, 8):
             funcLib.NameAEdge(posOnEdge[i], registeredEdgeNames[i])
             funcLib.NameAVertex(posOnVertex[i], registeredVertexNames[i])
