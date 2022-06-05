@@ -218,9 +218,11 @@ class UDPExtension(IUDPExtension):
         points_x[4] = points_x[1] + dist
         points_y[4] = points_y[3]
 
-        for turn in xrange(0, num_turns):
+        for turn in range(1, num_turns):
             old_i = 4 * (turn - 1) + 1
             new_i = 4 * turn + 1
+
+            print('old_i:', old_i, 'new_i:', new_i)
 
             points_x[new_i] = points_x[old_i] + dist
             points_y[new_i] = points_y[old_i] + dist
@@ -228,8 +230,11 @@ class UDPExtension(IUDPExtension):
             points_y[new_i + 1] = points_y[old_i + 1] + dist
             points_x[new_i + 2] = points_x[old_i + 2] - dist
             points_y[new_i + 2] = points_y[old_i + 2] - dist
-            points_x[new_i + 3] = points_x[old_i + 3] - dist
-            points_y[new_i + 3] = points_y[old_i + 3] + dist
+            points_x[new_i + 3] = points_x[old_i + 3] + dist
+            points_y[new_i + 3] = points_y[old_i + 3] - dist
+
+        points_x[num_points - 1] = points_x[num_points - 4]
+        points_y[num_points - 1] = start_y
 
         for i in xrange(0, num_points):
             points.append(UDPPosition(points_x[i], points_y[i], points_z[i]))
