@@ -1,1 +1,1 @@
-copy *.py "C:\Program Files\AnsysEM\AnsysEM21.2\Win64\syslib\UserDefinedPrimitives\Examples" /Y
+copy ".\UDP\*.py" "C:\Program Files\AnsysEM\AnsysEM21.2\Win64\syslib\UserDefinedPrimitives\Examples" /Y
