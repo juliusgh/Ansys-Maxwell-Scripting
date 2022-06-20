@@ -9,7 +9,7 @@ import sys
 primitiveInfo = UDPPrimitiveTypeInfo(
     name = "Rectangular Coil",
     purpose = "Create a Rectangular Coil in XY plane",
-    company = "Kistler",
+    company = "Julius Herb",
     date = "4-6-2022",
     version = "1.0")
 
@@ -21,7 +21,8 @@ defaultPrimitiveParams = [
     "12.0",
     "6.0",
     "2.0",
-    "1.0" 
+    "1.0",
+    "0.0"
 ]
 
 primitiveParamDefs = [ UDPPrimitiveParameterDefinition2(
@@ -52,7 +53,7 @@ primitiveParamDefs = [ UDPPrimitiveParameterDefinition2(
                         "Turns", 
                         "Number of turns", 
                         UnitType.NoUnit, 
-                        ParamPropType.Number, 
+                        ParamPropType.Value, 
                         ParamPropFlag.MustBeInt, 
                         UDPParam(ParamDataType.Int, defaultPrimitiveParams[3])), #4 parameter
                                  
@@ -86,7 +87,15 @@ primitiveParamDefs = [ UDPPrimitiveParameterDefinition2(
                         UnitType.LengthUnit, 
                         ParamPropType.Value, 
                         ParamPropFlag.MustBeReal, 
-                        UDPParam(ParamDataType.Double, defaultPrimitiveParams[7]))] #8 parameter
+                        UDPParam(ParamDataType.Double, defaultPrimitiveParams[7])), #8 parameter
+                                 
+                       UDPPrimitiveParameterDefinition2(
+                        "Pitch", 
+                        "Pitch of the coil (deviation along Z axis per turn)", 
+                        UnitType.LengthUnit, 
+                        ParamPropType.Value, 
+                        ParamPropFlag.MustBeReal, 
+                        UDPParam(ParamDataType.Double, defaultPrimitiveParams[8]))] #9 parameter
 
 
 numParams = len(primitiveParamDefs)
@@ -113,14 +122,15 @@ class UDPExtension(IUDPExtension):
 #-----------------------------------------------
 
     def CreatePrimitive2(self, funcLib, paramValues):
+        paramData = [str(value.Data) for value in paramValues]
+        funcLib.AddMessage(MessageSeverity.InfoMessage, "Create RectangularCoil with parameters: " + ", ".join(paramData))
         path = self._CreatePath(funcLib, paramValues) 
         if (path < 0):
             funcLib.AddMessage(MessageSeverity.ErrorMessage, "Could not create path")
         profile = self._CreateProfile(funcLib, paramValues)
         if (profile < 0):
             funcLib.AddMessage(MessageSeverity.ErrorMessage, "Could not create profile")
-        
-        theUDPSweepOptions = UDPSweepOptions(SweepDraftType.RoundDraft, 0.0, 0.0)
+          theUDPSweepOptions = UDPSweepOptions(SweepDraftType.RoundDraft, 0.0, 0.0)
         bRet = funcLib.SweepAlongPath(profile, path, theUDPSweepOptions)
         if (bRet == False):
             funcLib.AddMessage(MessageSeverity.ErrorMessage, "Could not sweep profile along path")   
@@ -147,8 +157,8 @@ class UDPExtension(IUDPExtension):
         return registeredVertexNames
   
     def AreParameterValuesValid2(self, error, udpParams):
-        numTurns = udpParams[3].Data
-        if (numTurns < 1):
+        num_turns = udpParams[3].Data
+        if (num_turns < 1):
             error.Add("Number of turns cannot be less than 1.")
             return False
         dist   = udpParams[2].Data
@@ -156,9 +166,10 @@ class UDPExtension(IUDPExtension):
         coil_height = udpParams[5].Data
         wire_width  = udpParams[6].Data
         wire_height = udpParams[7].Data
+        pitch = udpParams[8].Data
         
-        if (dist <= 0):
-            error.Add("Distance should be more than 0.")
+        if (dist < 0):
+            error.Add("Distance should be more or equal than 0.")
             return False
 
         if (coil_width <= 0):
@@ -177,9 +188,13 @@ class UDPExtension(IUDPExtension):
             error.Add("Wire height should be more than 0.")
             return False
 
-        if (dist <= wire_width):
-            error.Add("Distance between turns should be more than the width.")
-            return False
+        #if ((pitch <= wire_height) and (dist <= wire_width)):
+        #    error.Add("Distance between turns should be more than the width.")
+        #    return False
+
+        #if (pitch < 0):
+        #    error.Add("Pitch should be more or equal than 0.")
+        #    return False
         return True
 
 #------------------------------------------------
@@ -189,10 +204,13 @@ class UDPExtension(IUDPExtension):
         centre_x = paramValues[0].Data
         centre_y = paramValues[1].Data
 
-        dist = paramValues[2].Data
         num_turns = paramValues[3].Data
-        coil_width = paramValues[4].Data
-        coil_height = paramValues[5].Data
+        wire_width =  paramValues[6].Data
+        wire_height = paramValues[7].Data
+        coil_width = paramValues[4].Data + wire_width
+        coil_height = paramValues[5].Data + wire_height
+        pitch = paramValues[8].Data
+        dist = paramValues[2].Data
 
         num_points = 2 + 4 * num_turns
         num_segments = num_points - 1
@@ -208,7 +226,7 @@ class UDPExtension(IUDPExtension):
         for i in range(0, num_points):
             points_x.append(start_x)
             points_y.append(start_y)
-            points_z.append(start_y)
+            points_z.append(start_z)
 
         points_y[1] = centre_y + 0.5 * coil_height
         points_x[2] = centre_x - 0.5 * coil_width
@@ -231,10 +249,14 @@ class UDPExtension(IUDPExtension):
             points_x[new_i + 3] = points_x[old_i + 3] + dist
             points_y[new_i + 3] = points_y[old_i + 3] - dist
 
+        for i in range(1, num_points):
+            points_z[i] = pitch/4. * i - pitch/8.
+
         points_x[num_points - 1] = points_x[num_points - 2]
         points_y[num_points - 1] = start_y
+        points_z[num_points - 1] = pitch * num_turns
 
-        for i in range(0, num_points):
+        for i in range(num_points):
             points.append(UDPPosition(points_x[i], points_y[i], points_z[i]))
 
         self._m_StartPt = points[0]
@@ -259,6 +281,9 @@ class UDPExtension(IUDPExtension):
         
         wire_width =  paramValues[6].Data
         wire_height = paramValues[7].Data
+        coil_width = paramValues[4].Data + wire_width
+        coil_height = paramValues[5].Data + wire_height
+        dist = paramValues[2].Data
 
         num_points = 5
         num_segments = num_points - 1
@@ -280,6 +305,7 @@ class UDPExtension(IUDPExtension):
             segments.append(segment)
 
         polyline = UDPPolylineDefinition(points, segments, 1, 1)
+        return funcLib.CreateCircle(CoordinateSystemPlane.ZXPlane, UDPPosition(start_x,start_y,start_z),wire_width/2,True)
         return funcLib.CreatePolyline(polyline)
 
     def _NameEntities(self, funcLib, paramValues):
