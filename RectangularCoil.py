@@ -130,7 +130,7 @@ class UDPExtension(IUDPExtension):
         profile = self._CreateProfile(funcLib, paramValues)
         if (profile < 0):
             funcLib.AddMessage(MessageSeverity.ErrorMessage, "Could not create profile")
-        theUDPSweepOptions = UDPSweepOptions(SweepDraftType.MixedDraft, 0.0, 0.0) # RoundDraft
+          theUDPSweepOptions = UDPSweepOptions(SweepDraftType.RoundDraft, 0.0, 0.0)
         bRet = funcLib.SweepAlongPath(profile, path, theUDPSweepOptions)
         if (bRet == False):
             funcLib.AddMessage(MessageSeverity.ErrorMessage, "Could not sweep profile along path")   
@@ -264,7 +264,7 @@ class UDPExtension(IUDPExtension):
 
         segments = []
         for i in range(0, num_segments):
-            segment = UDPPolylineSegmentDefinition(PolylineSegmentType.LineSegment, i, 0, 0.0, UDPPosition(0,0,0), CoordinateSystemPlane.ZXPlane)
+            segment = UDPPolylineSegmentDefinition(PolylineSegmentType.LineSegment, i, 0, 0.0, UDPPosition(0,0,0), CoordinateSystemPlane.XYPlane)
             segments.append(segment)
 
         polyline = UDPPolylineDefinition(points, segments, 0, 0)
@@ -274,7 +274,10 @@ class UDPExtension(IUDPExtension):
         centre_x = paramValues[0].Data
         centre_y = paramValues[1].Data
 
+        dist = paramValues[2].Data
         num_turns = paramValues[3].Data
+        coil_width = paramValues[4].Data
+        coil_height = paramValues[5].Data
         
         wire_width =  paramValues[6].Data
         wire_height = paramValues[7].Data
@@ -298,7 +301,7 @@ class UDPExtension(IUDPExtension):
 
         segments = []
         for i in range(0, num_segments):
-            segment = UDPPolylineSegmentDefinition(PolylineSegmentType.LineSegment, i, 0, 0.0, UDPPosition(0,0,0), CoordinateSystemPlane.ZXPlane)
+            segment = UDPPolylineSegmentDefinition(PolylineSegmentType.LineSegment, i, 0, 0.0, UDPPosition(0,0,0), CoordinateSystemPlane.XYPlane)
             segments.append(segment)
 
         polyline = UDPPolylineDefinition(points, segments, 1, 1)
